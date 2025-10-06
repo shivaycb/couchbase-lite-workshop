@@ -20,17 +20,45 @@ constructor(
 ) {
 
     fun getAnswer(query: String, prompt: String, onResponse: ((QueryResult) -> Unit)) {
-        var jointContext = ""
-        val retrievedContextList = ArrayList<RetrievedContext>()
-        chunksUseCase.getSimilarChunks(query, n = 5).forEach {
-            jointContext += " " + it.second.chunkData
-            retrievedContextList.add(RetrievedContext(it.second.docFileName, it.second.chunkData))
-        }
-        Log.e("APP", "Context: $jointContext")
-        val inputPrompt = prompt.replace("\$CONTEXT", jointContext).replace("\$QUERY", query)
+        // Move all work to background thread to avoid blocking the main thread
         CoroutineScope(Dispatchers.IO).launch {
-            geminiRemoteAPI.getResponse(inputPrompt)?.let { llmResponse ->
-                onResponse(QueryResult(llmResponse, retrievedContextList))
+            try {
+                Log.e("APP", "Starting RAG query: $query")
+                var jointContext = ""
+                val retrievedContextList = ArrayList<RetrievedContext>()
+                
+                Log.e("APP", "Retrieving similar chunks...")
+                chunksUseCase.getSimilarChunks(query, n = 5).forEach {
+                    jointContext += " " + it.second.chunkData
+                    retrievedContextList.add(RetrievedContext(it.second.docFileName, it.second.chunkData))
+                }
+                Log.e("APP", "Context retrieved, found ${retrievedContextList.size} chunks")
+                
+                val inputPrompt = prompt.replace("\$CONTEXT", jointContext).replace("\$QUERY", query)
+                Log.e("APP", "Calling Gemini API...")
+                
+                val llmResponse = geminiRemoteAPI.getResponse(inputPrompt)
+                
+                if (llmResponse != null) {
+                    Log.e("APP", "Response received from Gemini")
+                    // Switch to Main dispatcher before updating UI state
+                    CoroutineScope(Dispatchers.Main).launch {
+                        onResponse(QueryResult(llmResponse, retrievedContextList))
+                    }
+                } else {
+                    Log.e("APP", "Gemini API returned null response")
+                    // Notify UI with error message
+                    CoroutineScope(Dispatchers.Main).launch {
+                        onResponse(QueryResult("Error: Unable to get response from AI. Please check your API key and internet connection.", retrievedContextList))
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("APP", "Error in getAnswer: ${e.message}", e)
+                e.printStackTrace()
+                // Notify UI about the error instead of leaving it in loading state
+                CoroutineScope(Dispatchers.Main).launch {
+                    onResponse(QueryResult("Error: ${e.message ?: "Unknown error occurred"}", emptyList()))
+                }
             }
         }
     }

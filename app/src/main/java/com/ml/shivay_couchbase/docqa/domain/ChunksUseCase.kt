@@ -30,8 +30,18 @@ constructor(private val chunksDB: ChunksDB, private val sentenceEncoder: Sentenc
     }
 
     fun getSimilarChunks(query: String, n: Int = 5): List<Pair<Float, Chunk>> {
-        val queryEmbedding = sentenceEncoder.encodeText(query)
-        return chunksDB.getSimilarChunks(queryEmbedding, n)
+        return try {
+            Log.e("APP", "Encoding query text: $query")
+            val queryEmbedding = sentenceEncoder.encodeText(query)
+            Log.e("APP", "Query embedding generated, size: ${queryEmbedding.size}")
+            val results = chunksDB.getSimilarChunks(queryEmbedding, n)
+            Log.e("APP", "Found ${results.size} similar chunks")
+            results
+        } catch (e: Exception) {
+            Log.e("APP", "Error in getSimilarChunks: ${e.message}", e)
+            e.printStackTrace()
+            emptyList()
+        }
     }
 }
 
