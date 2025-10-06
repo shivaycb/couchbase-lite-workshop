@@ -22,7 +22,7 @@ class GeminiRemoteAPI {
         configBuilder.temperature = 0.3f
         generativeModel =
             GenerativeModel(
-                modelName = "gemini-1.5-flash",
+                modelName = "gemini-2.5-flash",
                 apiKey = apiKey,
                 generationConfig = configBuilder.build()
             )
