@@ -11,22 +11,32 @@ class SentenceEmbeddingProvider(private val context: Context) {
     private val sentenceEmbedding = SentenceEmbedding()
 
     init {
-        val modelBytes = context.assets.open("all-MiniLM-L6-V2.onnx").use { it.readBytes() }
-        val tokenizerBytes = copyToLocalStorage()
-        runBlocking(Dispatchers.IO) { sentenceEmbedding.init(modelBytes, tokenizerBytes) }
+        val modelPath = copyModelToLocalStorage()
+        val tokenizerBytes = context.assets.open("tokenizer.json").readBytes()
+        runBlocking(Dispatchers.IO) { 
+            sentenceEmbedding.init(
+                modelPath, 
+                tokenizerBytes,
+                useTokenTypeIds = false,
+                outputTensorName = "token_embeddings",
+                normalizeEmbeddings = false
+            ) 
+        }
     }
 
-    fun encodeText(text: String): FloatArray =
+    fun encode(text: String): FloatArray =
         runBlocking(Dispatchers.Default) {
             return@runBlocking sentenceEmbedding.encode(text)
         }
+        
+    fun encodeText(text: String): FloatArray = encode(text)
 
-    private fun copyToLocalStorage(): ByteArray {
-        val tokenizerBytes = context.assets.open("tokenizer.json").readBytes()
-        val storageFile = File(context.filesDir, "tokenizer.json")
+    private fun copyModelToLocalStorage(): String {
+        val modelBytes = context.assets.open("all-MiniLM-L6-V2.onnx").readBytes()
+        val storageFile = File(context.filesDir, "all-MiniLM-L6-V2.onnx")
         if (!storageFile.exists()) {
-            storageFile.writeBytes(tokenizerBytes)
+            storageFile.writeBytes(modelBytes)
         }
-        return storageFile.readBytes()
+        return storageFile.absolutePath
     }
 }

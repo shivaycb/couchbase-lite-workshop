@@ -1,91 +1,102 @@
-// package com.ml.couchbase.docqa
-
-// import android.os.Bundle
-// import androidx.activity.ComponentActivity
-// import androidx.activity.compose.setContent
-// import androidx.activity.enableEdgeToEdge
-// import androidx.compose.animation.fadeIn
-// import androidx.compose.animation.fadeOut
-// import androidx.navigation.compose.NavHost
-// import androidx.navigation.compose.composable
-// import androidx.navigation.compose.rememberNavController
-// import com.ml.couchbase.docqa.ui.screens.ChatScreen
-// import com.ml.couchbase.docqa.ui.screens.DocsScreen
-// import dagger.hilt.android.AndroidEntryPoint
-
-// @AndroidEntryPoint
-// class MainActivity : ComponentActivity() {
-
-//     override fun onCreate(savedInstanceState: Bundle?) {
-//         super.onCreate(savedInstanceState)
-//         enableEdgeToEdge()
-//         setContent {
-//             val navHostController = rememberNavController()
-//             NavHost(
-//                 navController = navHostController,
-//                 startDestination = "chat",
-//                 enterTransition = { fadeIn() },
-//                 exitTransition = { fadeOut() }
-//             ) {
-//                 composable("docs") { DocsScreen(onBackClick = { navHostController.navigateUp() }) }
-//                 composable("chat") {
-//                     ChatScreen(onOpenDocsClick = { navHostController.navigate("docs") })
-//                 }
-//             }
-//         }
-//     }
-// }
-
-
-package com.ml.couchbase.docqa
+package com.ml.shivay_couchbase.docqa
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.lifecycle.lifecycleScope
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.ml.couchbase.docqa.data.DatabaseManager
-import com.ml.couchbase.docqa.domain.llm.GeminiRemoteAPI
-import com.ml.couchbase.docqa.ui.screens.ChatScreen
+import com.ml.shivay_couchbase.docqa.ui.screens.ChatScreen
 import com.ml.couchbase.docqa.ui.screens.DocsScreen
+import com.ml.shivay_couchbase.docqa.ui.screens.edit_credentials.EditCredentialsScreen
+import com.ml.shivay_couchbase.docqa.ui.screens.local_models.LocalModelsScreen
+import com.ml.shivay_couchbase.docqa.ui.viewmodels.ChatViewModel
+import com.ml.couchbase.docqa.ui.viewmodels.DocsViewModel
+import com.ml.shivay_couchbase.docqa.ui.screens.local_models.LocalModelsViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
+
+@Serializable
+object ChatRoute
+
+@Serializable
+object EditAPIKeyRoute
+
+@Serializable
+object DocsRoute
+
+@Serializable
+object LocalModelsRoute
+
+sealed class ChatNavEvent {
+    data object None : ChatNavEvent()
+    data object ToDocsScreen : ChatNavEvent()
+    data object ToEditAPIKeyScreen : ChatNavEvent()
+    data object ToLocalModelsScreen : ChatNavEvent()
+}
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        DatabaseManager.init(applicationContext)
-        testGeminiAPI()
         setContent {
             val navHostController = rememberNavController()
             NavHost(
                 navController = navHostController,
-                startDestination = "chat",
+                startDestination = ChatRoute,
                 enterTransition = { fadeIn() },
-                exitTransition = { fadeOut() }
+                exitTransition = { fadeOut() },
             ) {
-                composable("docs") { DocsScreen(onBackClick = { navHostController.navigateUp() }) }
-                composable("chat") {
-                    ChatScreen(onOpenDocsClick = { navHostController.navigate("docs") })
+                composable<DocsRoute> {
+                    DocsScreen(onBackClick = { navHostController.navigateUp() })
+                }
+                composable<EditAPIKeyRoute> { 
+                    EditCredentialsScreen(onBackClick = { navHostController.navigateUp() }) 
+                }
+                composable<LocalModelsRoute> { backStackEntry ->
+                    val viewModel: LocalModelsViewModel = hiltViewModel(backStackEntry)
+                    val uiState by viewModel.uiState.collectAsState()
+                    LocalModelsScreen(
+                        uiState = uiState,
+                        onEvent = viewModel::onEvent,
+                        onBackClick = { navHostController.navigateUp() },
+                    )
+                }
+                composable<ChatRoute> { backStackEntry ->
+                    val viewModel: ChatViewModel = hiltViewModel(backStackEntry)
+                    val chatScreenUIState by viewModel.chatScreenUIState.collectAsState()
+                    val navEvent by viewModel.navEventChannel.collectAsState(ChatNavEvent.None)
+                    LaunchedEffect(navEvent) {
+                        when (navEvent) {
+                            is ChatNavEvent.ToDocsScreen -> {
+                                navHostController.navigate(DocsRoute)
+                            }
+
+                            is ChatNavEvent.ToEditAPIKeyScreen -> {
+                                navHostController.navigate(EditAPIKeyRoute)
+                            }
+
+                            is ChatNavEvent.ToLocalModelsScreen -> {
+                                navHostController.navigate(LocalModelsRoute)
+                            }
+
+                            is ChatNavEvent.None -> {}
+                        }
+                    }
+                    ChatScreen(
+                        screenUiState = chatScreenUIState,
+                        onScreenEvent = { viewModel.onChatScreenEvent(it) },
+                    )
                 }
             }
-        }
-    }
-
-    private fun testGeminiAPI() {
-        val geminiAPI = GeminiRemoteAPI()
-        lifecycleScope.launch {
-            val response = geminiAPI.getResponse("What is the capital of France?")
-            Log.d("GeminiTest", "Response: $response")
         }
     }
 }

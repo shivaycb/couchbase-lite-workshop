@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">huggingface.co</domain>
+        <domain includeSubdomains="true">cdn-lfs.huggingface.co</domain>
+        <domain includeSubdomains="true">cdn-lfs-us-1.huggingface.co</domain>
+    </domain-config>
+</network-security-config>
+

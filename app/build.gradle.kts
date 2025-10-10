@@ -1,25 +1,22 @@
-import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.compose.compiler)
     kotlin("kapt")
     id("com.google.dagger.hilt.android")
+    kotlin("plugin.serialization") version "2.0.21"
 }
-
-val geminiKey: String = gradleLocalProperties(rootDir, providers).getProperty("geminiKey")
 
 android {
     namespace = "com.ml.couchbase.docqa"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.ml.couchbase.docqa"
         minSdk = 26
-        targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        targetSdk = 35
+        versionCode = 2
+        versionName = "2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -28,30 +25,23 @@ android {
     }
 
     buildTypes {
-        // Add the field 'geminiKey' in the build config
-        // See https://stackoverflow.com/a/60474096/13546426
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            buildConfigField( "String" , "geminiKey" , geminiKey)
-        }
-        debug {
-            buildConfigField( "String" , "geminiKey" , geminiKey)
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "21"
     }
     buildFeatures {
         compose = true
-        buildConfig = true
     }
     packaging {
         resources {
@@ -77,10 +67,12 @@ dependencies {
     implementation(libs.apache.poi.ooxml)
 
     // Sentence Embeddings
-    implementation("com.github.shubham0204:Sentence-Embeddings-Android:0.0.3")
+    // https://github.com/shubham0204/Sentence-Embeddings-Android
+    implementation(files("libs/sentence_embeddings.aar"))
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.17.0")
 
     // iTextPDF - for parsing PDFs
-    implementation("com.itextpdf:itextpdf:5.5.13.3")
+    implementation(libs.itextpdf)
 
     // Couchbase
     implementation(libs.couchbaseLite)
@@ -88,15 +80,23 @@ dependencies {
   
 
     // Gemini SDK - LLM
-    implementation("com.google.ai.client.generativeai:generativeai:0.6.0")
+    implementation(libs.generativeai)
 
     // compose-markdown
     // https://github.com/jeziellago/compose-markdown
-    implementation("com.github.jeziellago:compose-markdown:0.5.0")
+    implementation(libs.compose.markdown)
 
     implementation(libs.hilt.android)
     kapt(libs.hilt.android.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
+
+    // For secured/encrypted shared preferences
+    implementation("androidx.security:security-crypto:1.1.0")
+
+    implementation("com.github.khushpanchal:Ketch:2.0.5")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    implementation("com.google.mediapipe:tasks-genai:0.10.29")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -4,7 +4,6 @@ import android.app.Application
 import com.ml.couchbase.docqa.data.ChunksDB
 import com.ml.couchbase.docqa.data.DocumentsDB
 import com.ml.couchbase.docqa.domain.embeddings.SentenceEmbeddingProvider
-import com.ml.couchbase.docqa.domain.llm.GeminiRemoteAPI
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -30,12 +29,6 @@ object AppModule {
     @Singleton
     fun provideChunksDB(): ChunksDB {
         return ChunksDB()
-    }
-
-    @Provides
-    @Singleton
-    fun provideGeminiRemoteAPI(): GeminiRemoteAPI {
-        return GeminiRemoteAPI()
     }
 
     @Provides

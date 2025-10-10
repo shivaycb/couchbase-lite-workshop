@@ -1,9 +1,11 @@
+// This file is kept for backwards compatibility but is not actively used
+// The new ChatViewModel handles question answering directly using LLM abstraction
+
 package com.ml.couchbase.docqa.domain
 
 import android.util.Log
 import com.ml.couchbase.docqa.data.QueryResult
 import com.ml.couchbase.docqa.data.RetrievedContext
-import com.ml.couchbase.docqa.domain.llm.GeminiRemoteAPI
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
@@ -16,10 +18,10 @@ class QAUseCase
 constructor(
     private val documentsUseCase: DocumentsUseCase,
     private val chunksUseCase: ChunksUseCase,
-    private val geminiRemoteAPI: GeminiRemoteAPI
 ) {
 
     fun getAnswer(query: String, prompt: String, onResponse: ((QueryResult) -> Unit)) {
+        // Real implementation from exercise4
         var jointContext = ""
         val retrievedContextList = ArrayList<RetrievedContext>()
         chunksUseCase.getSimilarChunks(query, n = 5).forEach {
@@ -28,10 +30,12 @@ constructor(
         }
         Log.e("APP", "Context: $jointContext")
         val inputPrompt = prompt.replace("\$CONTEXT", jointContext).replace("\$QUERY", query)
+        
+        // Note: This requires GeminiRemoteAPI but we're using the new architecture
+        // This method is kept for backwards compatibility but not actively used
         CoroutineScope(Dispatchers.IO).launch {
-            geminiRemoteAPI.getResponse(inputPrompt)?.let { llmResponse ->
-                onResponse(QueryResult(llmResponse, retrievedContextList))
-            }
+            val mockResponse = "Please use the new ChatViewModel with LLM support"
+            onResponse(QueryResult(mockResponse, retrievedContextList))
         }
     }
 
@@ -39,33 +43,3 @@ constructor(
         return documentsUseCase.getDocsCount() > 0
     }
 }
-
-
-// package com.ml.couchbase.docqa.domain
-
-// import com.ml.couchbase.docqa.data.QueryResult
-// import com.ml.couchbase.docqa.data.RetrievedContext
-// import com.ml.couchbase.docqa.domain.llm.GeminiRemoteAPI
-// import javax.inject.Inject
-// import javax.inject.Singleton
-// import kotlinx.coroutines.CoroutineScope
-// import kotlinx.coroutines.Dispatchers
-// import kotlinx.coroutines.launch
-
-// @Singleton
-// class QAUseCase @Inject constructor(
-//     private val documentsUseCase: DocumentsUseCase,
-//     private val chunksUseCase: ChunksUseCase,
-//     private val geminiRemoteAPI: GeminiRemoteAPI
-// ) {
-//     fun getAnswer(query: String, prompt: String, onResponse: ((QueryResult) -> Unit)) {
-//         // Placeholder implementation
-//         CoroutineScope(Dispatchers.IO).launch {
-//             val mockResponse = "This is a mock answer to the query: $query"
-//             val mockContext = List(2) { RetrievedContext("mock_doc.pdf", "Mock context") }
-//             onResponse(QueryResult(mockResponse, mockContext))
-//         }
-//     }
-
-//     fun canGenerateAnswers(): Boolean = true
-// }

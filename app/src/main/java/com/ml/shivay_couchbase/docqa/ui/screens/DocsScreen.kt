@@ -53,8 +53,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ml.couchbase.docqa.data.Document
 import com.ml.couchbase.docqa.domain.readers.Readers
-import com.ml.couchbase.docqa.ui.components.AppAlertDialog
-import com.ml.couchbase.docqa.ui.components.createAlertDialog
+import com.ml.shivay_couchbase.docqa.ui.components.AppAlertDialog
+import com.ml.shivay_couchbase.docqa.ui.components.createAlertDialog
 import com.ml.couchbase.docqa.ui.theme.DocQATheme
 import com.ml.couchbase.docqa.ui.viewmodels.DocsViewModel
 import hideProgressDialog

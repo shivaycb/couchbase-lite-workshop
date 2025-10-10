@@ -1,15 +1,15 @@
-package com.ml.couchbase.docqa.domain.llm
+package com.ml.shivay_couchbase.docqa.domain.llm
 
 import android.util.Log
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.GenerationConfig
-import com.ml.couchbase.docqa.BuildConfig
+import com.google.ai.client.generativeai.type.content
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class GeminiRemoteAPI {
-
-    private val apiKey = BuildConfig.geminiKey
+class GeminiRemoteAPI(
+    private val apiKey: String,
+) : LLMInferenceAPI() {
     private val generativeModel: GenerativeModel
 
     init {
@@ -22,26 +22,22 @@ class GeminiRemoteAPI {
         configBuilder.temperature = 0.3f
         generativeModel =
             GenerativeModel(
-                modelName = "gemini-1.5-flash",
+                modelName = "gemini-2.5-flash",
                 apiKey = apiKey,
-                generationConfig = configBuilder.build()
+                generationConfig = configBuilder.build(),
+                systemInstruction =
+                    content {
+                        text(
+                            "You are an intelligent search engine. You will be provided with some retrieved context, as well as the users query. Your job is to understand the request, and answer based on the retrieved context.",
+                        )
+                    },
             )
     }
 
-    suspend fun getResponse(prompt: String): String? =
+    override suspend fun getResponse(prompt: String): String? =
         withContext(Dispatchers.IO) {
             Log.e("APP", "Prompt given: $prompt")
             val response = generativeModel.generateContent(prompt)
             return@withContext response.text
         }
 }
-
-
-// package com.ml.couchbase.docqa.domain.llm
-
-// class GeminiRemoteAPI {
-//     suspend fun getResponse(prompt: String): String? {
-//         // Placeholder implementation
-//         return "This is a mock response from Gemini API for prompt: $prompt"
-//     }
-// }
