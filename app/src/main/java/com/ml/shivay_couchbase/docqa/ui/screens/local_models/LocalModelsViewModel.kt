@@ -165,12 +165,40 @@ class LocalModelsViewModel @Inject constructor(
 
     private suspend fun loadModel(model: LocalModel) =
         withContext(Dispatchers.IO) {
+            val modelPath = model.getLocalModelPath(context.filesDir.absolutePath)
+            Log.d("APP", "Attempting to load model from: $modelPath")
+            
+            // Verify file exists before attempting to load
+            val modelFile = java.io.File(modelPath)
+            if (!modelFile.exists()) {
+                Log.e("APP", "Model file does not exist at: $modelPath")
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        context,
+                        "Model file not found. Please re-download the model.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+                return@withContext
+            }
+            
+            Log.d("APP", "Model file exists, size: ${modelFile.length()} bytes")
+            
             liteRTAPI.load(
                 context,
-                model.getLocalModelPath(context.filesDir.absolutePath),
-                onSuccess = {},
+                modelPath,
+                onSuccess = {
+                    Log.d("APP", "Model loaded successfully")
+                },
                 onError = { exception ->
-                    Log.e("APP", "Failed to load LiteRT model: ${exception.message}")
+                    Log.e("APP", "Failed to load LiteRT model: ${exception.message}", exception)
+                    viewModelScope.launch(Dispatchers.Main) {
+                        Toast.makeText(
+                            context,
+                            "Failed to load model: ${exception.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
                 },
             )
         }
@@ -179,6 +207,23 @@ class LocalModelsViewModel @Inject constructor(
         Log.d("APP", "Starting download for model: ${model.name}")
         Log.d("APP", "Download URL: ${model.downloadUrl}")
         Log.d("APP", "Save to: ${context.filesDir.absolutePath}/${model.getFileName()}")
+        
+        // Clean up old downloads and temp files for this model before starting
+        val targetFileName = model.getFileName()
+        val filesDir = java.io.File(context.filesDir.absolutePath)
+        filesDir.listFiles()?.forEach { file ->
+            // Remove old versions with suffixes like (1), (2), etc. and .temp files
+            if (file.name.startsWith(targetFileName.substringBeforeLast(".")) && 
+                (file.name.contains("(") || file.name.endsWith(".temp"))) {
+                Log.d("APP", "Cleaning up old file: ${file.name}")
+                file.delete()
+            }
+            // Also remove exact match if it exists (to ensure clean download)
+            if (file.name == targetFileName) {
+                Log.d("APP", "Removing existing file: ${file.name}")
+                file.delete()
+            }
+        }
         
         val headers =
             if (hfAccessToken.getToken() != null) {
@@ -237,6 +282,66 @@ class LocalModelsViewModel @Inject constructor(
 
                             Status.SUCCESS -> {
                                 Log.d("APP", "Download completed successfully")
+                                Log.d("APP", "Ketch download path: ${ketchDownload.path}")
+                                Log.d("APP", "Ketch download fileName: ${ketchDownload.fileName}")
+                                
+                                val expectedFilePath = model.getLocalModelPath(context.filesDir.absolutePath)
+                                val expectedFile = java.io.File(expectedFilePath)
+                                val targetFileName = model.getFileName()
+                                val baseFileName = targetFileName.substringBeforeLast(".")
+                                val fileExtension = targetFileName.substringAfterLast(".")
+                                
+                                // Search for the downloaded file in the directory
+                                val filesDir = java.io.File(context.filesDir.absolutePath)
+                                val downloadedFiles = filesDir.listFiles { file ->
+                                    // Find files that match our model name (including those with (1), (2) suffixes)
+                                    file.isFile && 
+                                    file.name.startsWith(baseFileName) && 
+                                    file.name.endsWith(".$fileExtension") &&
+                                    !file.name.endsWith(".temp") &&
+                                    file.length() > 1_000_000 // Model files should be large (> 1MB)
+                                }?.sortedByDescending { it.lastModified() } // Get most recent
+                                
+                                Log.d("APP", "Found ${downloadedFiles?.size ?: 0} potential model files")
+                                downloadedFiles?.forEach { file ->
+                                    Log.d("APP", "  - ${file.name} (${file.length()} bytes, modified: ${file.lastModified()})")
+                                }
+                                
+                                val actualFile = downloadedFiles?.firstOrNull()
+                                
+                                if (actualFile != null && actualFile.exists()) {
+                                    Log.d("APP", "Using downloaded file: ${actualFile.absolutePath}")
+                                    Log.d("APP", "File size: ${actualFile.length()} bytes")
+                                    
+                                    // Rename to expected filename if different
+                                    if (actualFile.absolutePath != expectedFilePath) {
+                                        Log.d("APP", "Renaming file from ${actualFile.absolutePath} to $expectedFilePath")
+                                        // Delete any existing file at target location
+                                        if (expectedFile.exists()) {
+                                            Log.d("APP", "Deleting existing file at target location")
+                                            expectedFile.delete()
+                                        }
+                                        if (actualFile.renameTo(expectedFile)) {
+                                            Log.d("APP", "File renamed successfully")
+                                        } else {
+                                            Log.e("APP", "Failed to rename file. Trying to copy instead...")
+                                            try {
+                                                actualFile.copyTo(expectedFile, overwrite = true)
+                                                actualFile.delete()
+                                                Log.d("APP", "File copied successfully")
+                                            } catch (e: Exception) {
+                                                Log.e("APP", "Failed to copy file: ${e.message}", e)
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    Log.e("APP", "ERROR: Could not find downloaded model file")
+                                    Log.d("APP", "All files in directory:")
+                                    filesDir.listFiles()?.forEach { file ->
+                                        Log.d("APP", "  - ${file.name} (${file.length()} bytes)")
+                                    }
+                                }
+                                
                                 _uiState.update {
                                     it.copy(
                                         downloadModelDialogState = it.downloadModelDialogState.copy(isDialogVisible = false),

@@ -24,7 +24,7 @@ constructor(
         // Real implementation from exercise4
         var jointContext = ""
         val retrievedContextList = ArrayList<RetrievedContext>()
-        chunksUseCase.getSimilarChunks(query, n = 5).forEach {
+        chunksUseCase.getSimilarChunks(query, n = 1).forEach {
             jointContext += " " + it.second.chunkData
             retrievedContextList.add(RetrievedContext(it.second.docFileName, it.second.chunkData))
         }

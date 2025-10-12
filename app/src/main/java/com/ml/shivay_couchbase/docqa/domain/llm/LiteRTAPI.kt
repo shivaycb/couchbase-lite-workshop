@@ -41,17 +41,22 @@ class LiteRTAPI @Inject constructor() : LLMInferenceAPI() {
         onSuccess: () -> Unit,
         onError: (Exception) -> Unit,
     ) {
-        val taskOptions =
-            LlmInference.LlmInferenceOptions
-                .builder()
-                .setModelPath(modelPath)
-                .setMaxTopK(64)
-                .setMaxTokens(2048)
-                .build()
-        llmInference = LlmInference.createFromOptions(context, taskOptions)
-        isLoaded = true
-        loadedModelPath = modelPath
-        onSuccess()
+        try {
+            val taskOptions =
+                LlmInference.LlmInferenceOptions
+                    .builder()
+                    .setModelPath(modelPath)
+                    .setMaxTopK(64)
+                    .setMaxTokens(2048)
+                    .build()
+            llmInference = LlmInference.createFromOptions(context, taskOptions)
+            isLoaded = true
+            loadedModelPath = modelPath
+            onSuccess()
+        } catch (e: Exception) {
+            Log.e("APP", "Failed to initialize LiteRT engine: ${e.message}", e)
+            onError(e)
+        }
     }
 
     override suspend fun getResponse(prompt: String): String? =

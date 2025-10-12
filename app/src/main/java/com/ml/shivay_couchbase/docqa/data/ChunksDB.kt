@@ -31,7 +31,7 @@ class ChunksDB {
         database.save(mutableDoc)
     }
 
-fun getSimilarChunks(queryEmbedding: FloatArray, n: Int = 5): List<Pair<Float, Chunk>> {
+fun getSimilarChunks(queryEmbedding: FloatArray, n: Int = 1): List<Pair<Float, Chunk>> {
     // SQL query to find similar chunks using the vector index
     val sql = """
     SELECT docFileName, chunkData, chunkEmbedding, APPROX_VECTOR_DISTANCE(chunkEmbedding, ${'$'}embeddingArray ) as distance
