@@ -12,8 +12,8 @@ import javax.inject.Singleton
 @Singleton
 class LiteRTAPI @Inject constructor() : LLMInferenceAPI() {
     private lateinit var llmInference: LlmInference
-    var isLoaded = false
-    var loadedModelPath: String? = null
+    override var isLoaded = false
+    override var loadedModelPath: String? = null
 
     class PartialProgressListener(
         private val onPartialResponseGenerated: (String) -> Unit,
@@ -35,7 +35,7 @@ class LiteRTAPI @Inject constructor() : LLMInferenceAPI() {
         }
     }
 
-    fun load(
+    override fun load(
         context: Context,
         modelPath: String,
         onSuccess: () -> Unit,
@@ -65,7 +65,7 @@ class LiteRTAPI @Inject constructor() : LLMInferenceAPI() {
             llmInference.generateResponse(prompt)
         }
 
-    fun unload() {
+    override fun unload() {
         llmInference.close()
         isLoaded = false
         loadedModelPath = null

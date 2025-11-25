@@ -9,7 +9,7 @@ import com.ketch.Ketch
 import com.ketch.Status
 import com.ml.shivay_couchbase.docqa.data.HFAccessToken
 import com.ml.shivay_couchbase.docqa.data.LocalModel
-import com.ml.shivay_couchbase.docqa.domain.llm.LiteRTAPI
+import com.ml.shivay_couchbase.docqa.domain.llm.LLMInferenceAPI
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -49,7 +49,7 @@ data class DownloadModelDialogUIState(
 @HiltViewModel
 class LocalModelsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val liteRTAPI: LiteRTAPI,
+    private val llmInferenceAPI: LLMInferenceAPI,
     private val hfAccessToken: HFAccessToken,
 ) : ViewModel() {
     private val _uiState =
@@ -139,8 +139,8 @@ class LocalModelsViewModel @Inject constructor(
                 }
             }
             is LocalModelsUIEvent.OnUseModelClick -> {
-                if (liteRTAPI.isLoaded) {
-                    liteRTAPI.unload()
+                if (llmInferenceAPI.isLoaded) {
+                    llmInferenceAPI.unload()
                 }
                 viewModelScope.launch(Dispatchers.IO) {
                     loadModel(event.model)
@@ -154,7 +154,7 @@ class LocalModelsViewModel @Inject constructor(
                             it.models.map { model ->
                                 model.copy(
                                     isLoaded =
-                                        liteRTAPI.loadedModelPath == model.getLocalModelPath(context.filesDir.absolutePath),
+                                        llmInferenceAPI.loadedModelPath == model.getLocalModelPath(context.filesDir.absolutePath),
                                 )
                             },
                     )
@@ -184,7 +184,7 @@ class LocalModelsViewModel @Inject constructor(
             
             Log.d("APP", "Model file exists, size: ${modelFile.length()} bytes")
             
-            liteRTAPI.load(
+            llmInferenceAPI.load(
                 context,
                 modelPath,
                 onSuccess = {
