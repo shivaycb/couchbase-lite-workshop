@@ -48,6 +48,22 @@ android {
             excludes += "META-INF/DEPENDENCIES"
         }
     }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
+    }
+
+    defaultConfig {
+        externalNativeBuild {
+            cmake {
+                arguments += "-DANDROID_STL=c++_shared"
+                abiFilters += "arm64-v8a"
+            }
+        }
+    }
 }
 
 dependencies {

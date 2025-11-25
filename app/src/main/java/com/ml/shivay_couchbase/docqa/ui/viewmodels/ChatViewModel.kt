@@ -14,7 +14,6 @@ import com.ml.couchbase.docqa.domain.DocumentsUseCase
 import com.ml.couchbase.docqa.domain.embeddings.SentenceEmbeddingProvider
 import com.ml.shivay_couchbase.docqa.domain.llm.GeminiRemoteAPI
 import com.ml.shivay_couchbase.docqa.domain.llm.LLMInferenceAPI
-import com.ml.shivay_couchbase.docqa.domain.llm.LiteRTAPI
 import com.ml.shivay_couchbase.docqa.ui.components.createAlertDialog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -65,7 +64,7 @@ class ChatViewModel @Inject constructor(
     private val chunksUseCase: ChunksUseCase,
     private val geminiAPIKey: GeminiAPIKey,
     private val sentenceEncoder: SentenceEmbeddingProvider,
-    private val liteRTAPI: LiteRTAPI,
+    private val llmInferenceAPI: LLMInferenceAPI,
 ) : ViewModel() {
     private val _chatScreenUIState = MutableStateFlow(ChatScreenUIState())
     val chatScreenUIState: StateFlow<ChatScreenUIState> = _chatScreenUIState
@@ -85,7 +84,7 @@ class ChatViewModel @Inject constructor(
                         ).show()
                     return
                 }
-                if (!checkValidAPIKey() && !liteRTAPI.isLoaded) {
+                if (!checkValidAPIKey() && !llmInferenceAPI.isLoaded) {
                     createAlertDialog(
                         dialogTitle = "Invalid API Key",
                         dialogText = "Please enter a Gemini API key or load a local model to use for generating responses.",
@@ -115,9 +114,9 @@ class ChatViewModel @Inject constructor(
                     _chatScreenUIState.value.copy(question = event.query)
 
                 val llm =
-                    if (liteRTAPI.isLoaded) {
+                    if (llmInferenceAPI.isLoaded) {
                         Toast.makeText(context, "Using local model...", Toast.LENGTH_LONG).show()
-                        liteRTAPI
+                        llmInferenceAPI
                     } else {
                         val apiKey = geminiAPIKey.getAPIKey() ?: throw Exception("Gemini API key is null")
                         Toast.makeText(context, "Using Gemini cloud model...", Toast.LENGTH_LONG).show()

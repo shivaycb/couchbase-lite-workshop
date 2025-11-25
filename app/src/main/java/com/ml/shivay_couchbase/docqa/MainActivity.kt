@@ -46,6 +46,22 @@ sealed class ChatNavEvent {
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Test ExecuTorch Initialization
+        val runner = ExecuTorchRunner()
+        val initSuccess = runner.initialize("dummy_model_path.pte")
+        if (initSuccess) {
+            android.util.Log.d("MainActivity", "ExecuTorch initialized successfully")
+            try {
+                val output = runner.generate("Hello ExecuTorch")
+                android.util.Log.d("MainActivity", "Inference result: $output")
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Inference failed", e)
+            }
+        } else {
+            android.util.Log.e("MainActivity", "ExecuTorch initialization failed")
+        }
+
         enableEdgeToEdge()
         setContent {
             val navHostController = rememberNavController()

@@ -1,5 +1,6 @@
 package com.ml.shivay_couchbase.docqa.domain.llm
 
+import android.content.Context
 import android.util.Log
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.GenerationConfig
@@ -11,6 +12,8 @@ class GeminiRemoteAPI(
     private val apiKey: String,
 ) : LLMInferenceAPI() {
     private val generativeModel: GenerativeModel
+    override var isLoaded: Boolean = true
+    override var loadedModelPath: String? = null
 
     init {
         // Here's a good reference on topK, topP and temperature
@@ -34,10 +37,23 @@ class GeminiRemoteAPI(
             )
     }
 
+    override fun load(
+        context: Context,
+        modelPath: String,
+        onSuccess: () -> Unit,
+        onError: (Exception) -> Unit,
+    ) {
+        onSuccess()
+    }
+
     override suspend fun getResponse(prompt: String): String? =
         withContext(Dispatchers.IO) {
             Log.e("APP", "Prompt given: $prompt")
             val response = generativeModel.generateContent(prompt)
             return@withContext response.text
         }
+
+    override fun unload() {
+        // No-op
+    }
 }
