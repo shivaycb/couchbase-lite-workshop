@@ -4,8 +4,6 @@ An Android document question-answering app that demonstrates how to combine **Co
 
 The app is built with **Jetpack Compose** and uses **Couchbase Lite Enterprise Edition** with vector indexing support to store and search document content locally. Users can browse documents, ingest sample files, and ask natural-language questions through a chat experience backed by retrieval and LLM-based answer generation.
 
-> Note: This README draft is based on the repository code I could inspect, but I could not reliably verify branch `exercise5` specifically from the available GitHub tooling. If you want, I can next generate a branch-accurate version once you share the `exercise5` file tree or a GitHub URL pinned to that branch.
-
 ## Quick Start
 
 If your machine is already configured with Android Studio and the required Couchbase Lite dependencies:
@@ -406,19 +404,6 @@ This can happen if:
 - no sample files have been imported
 - ingestion pipeline is not executed
 - current exercise branch contains placeholder database implementations
-
-## Notes About the Current Code
-
-From the code I could inspect:
-
-- the app is clearly intended as a **DocQA / RAG workshop app**
-- navigation is wired between **chat** and **docs**
-- Hilt is enabled at the app level
-- Couchbase Lite + vector search dependencies are present
-- Gemini is configured through `local.properties`
-- the visible `DatabaseManager` file includes a **placeholder implementation**, while commented code shows the intended Couchbase Lite setup
-
-This strongly suggests the repository may be structured as a workshop with multiple stages, and `exercise5` may contain a more complete implementation than the default branch snapshot I could access.
 
 ## Related Resources
 
